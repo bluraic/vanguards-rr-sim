@@ -57,7 +57,7 @@
             background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
             background-size: 400% 100%;
             clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
-            animation: chroma-bg 20s linear infinite;
+            animation: chroma-bg 40s linear infinite;
         }
         
         @keyframes chroma-bg {
@@ -134,7 +134,7 @@
             background-size: 400% 100%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: chroma-text 4s linear infinite;
+            animation: chroma-text 8s linear infinite;
         }
         @keyframes chroma-text {
             0% { background-position: 400% 0; }
@@ -492,8 +492,6 @@
             const rerollBtn = document.getElementById('reroll-btn');
             const totalRerollsCount = document.getElementById('total-rerolls-count');
             const totalRerollsText = document.getElementById('total-rerolls-text');
-            const remainingRerollsCount = document.getElementById('remaining-rerolls-count');
-            const remainingRerollsText = document.getElementById('remaining-rerolls-text');
             const traitSlot = document.getElementById('trait-slot');
             const traitImg = document.getElementById('trait-img');
             const traitName = document.getElementById('trait-name');
@@ -532,11 +530,12 @@
             const purchasePanel = document.getElementById('purchase-panel');
             const storeModalContent = storeModal.querySelector('.modal-content');
 
-            const uiSfx = new Audio('assets/sfx/ui_sfx.m4a');
+            let audioVolume = 1.0;
             
             function playUiSfx() {
-                uiSfx.currentTime = 0;
-                uiSfx.play().catch(error => console.error("SFX play failed:", error));
+                const audio = new Audio('assets/sfx/ui_sfx.m4a');
+                audio.volume = audioVolume;
+                audio.play().catch(error => console.error("SFX play failed:", error));
             }
 
             function initializeDefaultFilters() {
@@ -631,18 +630,36 @@
                 }
             }
 
+            function updateRerollButtonState() {
+                const outOfRolls = isLimitedMode && limitedRerolls <= 0;
+                rerollBtn.disabled = isRerollOnCooldown || outOfRolls;
+            }
+
+            function updateCounters() {
+                totalRerollsCount.textContent = rerollCount;
+                if (isLimitedMode) {
+                    rerollItemCount.textContent = `${limitedRerolls}/1`;
+                } else {
+                    rerollItemCount.innerHTML = `&infin;/1`;
+                }
+            }
+
             function executeSingleReroll() {
                 if (isRerollOnCooldown) return;
-
+                
+                if (isLimitedMode && limitedRerolls <= 0) {
+                    outOfRerollsModal.classList.add('active');
+                    return;
+                }
+                
+                isRerollOnCooldown = true;
                 if (isLimitedMode) {
-                    if (limitedRerolls <= 0) {
-                        outOfRerollsModal.classList.add('active');
-                        return;
-                    }
                     limitedRerolls--;
-                } 
+                }
                 rerollCount++;
-                updateRerollCounter();
+                
+                updateCounters();
+                updateRerollButtonState();
                 
                 let obtainedTrait;
                 let pityHit = false;
@@ -684,11 +701,9 @@
                     populateIndex();
                 }
 
-                isRerollOnCooldown = true;
-                rerollBtn.disabled = true;
                 setTimeout(() => {
                     isRerollOnCooldown = false;
-                    rerollBtn.disabled = false;
+                    updateRerollButtonState();
                 }, rerollCooldown * 1000);
             }
             
@@ -747,23 +762,6 @@
                     button.innerHTML = `<img src="${trait.image}" alt="${trait.name}" class="w-full h-full object-contain">`;
                     filtersList.appendChild(button);
                 });
-            }
-            
-            function updateRerollCounter() {
-                if (isLimitedMode) {
-                    remainingRerollsText.classList.remove('hidden');
-                    totalRerollsText.classList.remove('hidden');
-                    remainingRerollsCount.textContent = limitedRerolls;
-                    totalRerollsCount.textContent = rerollCount;
-                    rerollBtn.disabled = limitedRerolls <= 0;
-                    rerollItemCount.textContent = `${limitedRerolls}/1`;
-                } else {
-                    remainingRerollsText.classList.add('hidden');
-                    totalRerollsText.classList.remove('hidden');
-                    totalRerollsCount.textContent = rerollCount;
-                    rerollBtn.disabled = false;
-                    rerollItemCount.innerHTML = `&infin;/1`;
-                }
             }
             
             function getPurchasePanelHTML() {
@@ -850,7 +848,8 @@
                 purchasePanel.classList.toggle('hidden', !isLimitedMode);
                 rerollCount = 0;
                 limitedRerolls = 0;
-                updateRerollCounter();
+                updateCounters();
+                updateRerollButtonState();
             });
 
             gameModeSelect.addEventListener('change', (e) => {
@@ -868,7 +867,7 @@
 
             volumeSlider.addEventListener('input', () => {
                 const volume = volumeSlider.value;
-                uiSfx.volume = volume;
+                audioVolume = volume;
                 updateVolumeBlocks(volume);
             });
 
@@ -955,7 +954,8 @@
                     playUiSfx();
                     const amount = parseInt(button.dataset.amount, 10);
                     limitedRerolls += amount;
-                    updateRerollCounter();
+                    updateCounters();
+                    updateRerollButtonState();
                     if(storeModal.classList.contains('active')) {
                         storeModal.classList.remove('active');
                     }
@@ -1004,12 +1004,13 @@
             
             setupVolumeBlocks();
             const initialVolume = volumeSlider.value;
-            uiSfx.volume = initialVolume;
+            audioVolume = initialVolume;
             updateVolumeBlocks(initialVolume);
             volumeLevelInput.value = parseFloat(initialVolume).toFixed(1);
             
             updateTraitSlot(getRandomTrait());
-            updateRerollCounter();
+            updateCounters();
+            updateRerollButtonState();
         });
     </script>
 </body>
