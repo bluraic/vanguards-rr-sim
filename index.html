@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Vanguards - Trait Reroll Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', 'Fredoka Fallback', sans-serif;
+            background: #0a0a12 url('https://www.transparenttextures.com/patterns/stardust.png');
+            overflow-x: hidden;
+            color: white;
+        }
+
+        h1, h2, h3, h4, p, button, span, select, option, label {
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #f97316, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .main-panel-wrapper {
+            position: relative;
+        }
+        .main-panel-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            z-index: -1;
+            background: linear-gradient(90deg, #ef4444, #ec4899, #8b5cf6, #22d3ee, #22c55e);
+            filter: blur(20px);
+            border-radius: 1.25rem; 
+        }
+
+        .main-panel {
+            background-color: rgba(10, 10, 18, 0.9);
+            border: 2px solid #334155;
+            backdrop-filter: blur(10px);
+        }
+        .panel-header {
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+            background-size: 400% 100%;
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+            animation: chroma-bg 20s linear infinite;
+        }
+        
+        @keyframes chroma-bg {
+            0% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+
+        .btn-base {
+            transition: all 0.2s ease-in-out;
+            border: 2px solid;
+            position: relative;
+        }
+        .btn-base:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.05);
+            filter: brightness(1.2);
+            box-shadow: 0 0 0 2px white;
+        }
+        .btn-base:disabled {
+            filter: grayscale(0.7);
+            cursor: not-allowed;
+        }
+        .btn-base:active:not(:disabled) {
+            transform: translateY(0px) scale(0.95);
+            filter: brightness(0.9);
+        }
+        
+        .btn-index { 
+            background: linear-gradient(to bottom, #6E27FD 40%, #4919A8);
+            border-color: #6E27FD;
+        }
+        .btn-reroll { 
+            background: linear-gradient(to bottom, #08FD25 40%, #16a34a);
+            border-color: #08FD25;
+        }
+        .btn-reroll:hover:not(:disabled) {
+             transform: translateY(-2px) scale(1.1);
+        }
+        .btn-filters { 
+            background: linear-gradient(to bottom, #1D51FD 40%, #1336AA);
+            border-color: #1D51FD;
+        }
+
+        .push-left {
+            transform: translateX(-10px);
+        }
+        .push-right {
+            transform: translateX(10px);
+        }
+        
+        .trait-vigor,
+        .trait-swift,
+        .trait-range,
+        .trait-rainbow {
+            text-shadow: none !important;
+        }
+
+        .trait-vigor {
+            background: linear-gradient(to bottom, #c084fc, #9333ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .trait-swift {
+            background: linear-gradient(to bottom, #60a5fa, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .trait-range {
+            background: linear-gradient(to bottom, #f87171, #dc2626);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .trait-rainbow {
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+            background-size: 400% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: chroma-text 4s linear infinite;
+        }
+        @keyframes chroma-text {
+            0% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+
+        #trait-index-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100%;
+            background-color: rgba(10, 10, 18, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 2px solid #334155;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+        }
+        #trait-index-panel.active {
+            transform: translateX(0);
+        }
+        .trait-index-item {
+            border-bottom: 1px solid #334155;
+        }
+        .trait-index-item:last-child {
+            border-bottom: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+
+        .filter-btn {
+            background-color: rgba(0,0,0,0.3);
+            border: 2px solid #4b5563;
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .filter-btn.active {
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+        
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #10B981;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10B981;
+        }
+        
+        .purchase-panel {
+            background: linear-gradient(to bottom, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.1));
+            border: 2px solid #334155;
+            backdrop-filter: blur(10px);
+        }
+        .purchase-item {
+            background-color: rgba(10, 10, 18, 0.7);
+            border: 2px solid #4b5563;
+            transition: all 0.3s ease;
+        }
+        .purchase-item:hover {
+            border-color: #6ee7b7;
+        }
+        .purchase-btn {
+            background: linear-gradient(to bottom, #22d3ee, #0e7490);
+            border: 2px solid #67e8f9;
+        }
+        .robux-icon {
+            width: 1.25em;
+            height: 1.25em;
+            filter: drop-shadow(-2px -2px 0 #000) drop-shadow(2px -2px 0 #000) drop-shadow(-2px 2px 0 #000) drop-shadow(2px 2px 0 #000);
+        }
+
+    </style>
+</head>
+<body class="text-white">
+
+    <div id="purchase-panel" class="purchase-panel rounded-2xl w-full max-w-xs p-4 space-y-4 hidden fixed top-1/2 -translate-y-1/2 left-8 z-10">
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-screen">
+        <div class="flex flex-col items-center gap-4">
+            <div class="main-panel-wrapper w-[864px]"> 
+                <div class="main-panel rounded-2xl w-full p-1">
+                    <div class="bg-black rounded-xl p-6">
+                        <div class="panel-header text-left pl-20 py-2 mb-6">
+                            <h1 class="text-3xl font-extrabold tracking-wider">TRAITS</h1>
+                        </div>
+                        <div class="border border-gray-700 rounded-lg p-4">
+                            <div class="flex flex-col md:flex-row items-center justify-center gap-16 mb-6">
+                                <div class="flex-shrink-0 text-center">
+                                    <div class="inline-block relative">
+                                        <img src="assets/units/Koguro_29.webp" alt="Koguro (Unleashed)" class="w-36 h-36 rounded-md mx-auto">
+                                        <h2 class="absolute bottom-1 left-0 right-0 text-lg font-bold bg-black/50 py-0.5">Koguro (Unleashed)</h2>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-auto text-center">
+                                    <p class="mb-2 font-bold">TRAIT</p>
+                                    <div class="p-0.5 rounded-lg mb-2 max-w-sm mx-auto" style="background: linear-gradient(to right, #f97316, #fed7aa, #f97316);">
+                                        <div class="bg-black p-2 rounded-md w-64 mx-auto">
+                                            <div id="trait-slot" class="flex items-center justify-center gap-2">
+                                                <img id="trait-img" src="https://placehold.co/64x64/1F2937/FFFFFF?text=?" alt="Trait" class="w-12 h-12 object-contain rounded-md">
+                                                <div class="w-40 h-12 flex items-center justify-center">
+                                                    <h3 id="trait-name" class="text-xl font-semibold text-center">Empty</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p id="trait-desc" class="text-center text-lg"></p>
+                                </div>
+                            </div>
+                            
+                            <p class="text-center text-gray-500 text-sm my-4">Rerolling a trait on this unit will replace their current trait.</p>
+
+                            <div class="grid grid-cols-3 gap-2 mb-4 justify-center px-10">
+                                <button id="index-btn" class="btn-base btn-index font-bold py-2 px-2 rounded-lg text-lg">Index</button>
+                                <button id="reroll-btn" class="btn-base btn-reroll font-bold py-4 px-2 rounded-lg text-lg">Reroll</button>
+                                <button id="filters-btn" class="btn-base btn-filters font-bold py-2 px-2 rounded-lg text-lg">Filters</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="counter-container" class="text-center text-xl">
+                <p id="remaining-rerolls-text" class="hidden">Remaining Rerolls: <span id="remaining-rerolls-count" class="font-bold text-2xl gradient-text">0</span></p>
+                <p id="total-rerolls-text">Total Rerolls: <span id="total-rerolls-count" class="font-bold text-2xl gradient-text">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <button id="settings-btn" class="fixed bottom-4 left-4 text-gray-400 hover:text-white transition-colors z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+    </button>
+
+    <div id="trait-index-panel" class="p-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">TRAIT INDEX</h2>
+        </div>
+        <div id="trait-index-list" class="flex flex-col gap-2"></div>
+    </div>
+
+    <div id="filters-modal" class="modal-overlay flex items-center justify-center">
+        <div class="modal-content main-panel rounded-2xl w-full max-w-lg p-1">
+            <div class="bg-gray-900 rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Filters</h2>
+                </div>
+                <div class="text-sm mb-4">
+                    <p>Click on a trait to mark it as <span class="text-amber-500 font-bold">Unskippable</span>.</p>
+                    <p>You will be asked for confirmation before rerolling an unskippable trait.</p>
+                </div>
+                <div id="filters-list" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 max-h-[60vh] overflow-y-auto pr-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay flex items-center justify-center">
+        <div class="modal-content main-panel rounded-2xl w-full max-w-md p-1">
+            <div class="bg-gray-900 rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Options</h2>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <label for="pity-toggle" class="text-lg font-bold">Enable Pity System</label>
+                        <div class="relative inline-block w-14 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="pity-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
+                            <label for="pity-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-600 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label for="limited-toggle" class="text-lg font-bold">Limited Traits Mode</label>
+                        <div class="relative inline-block w-14 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="limited-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <label for="limited-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-600 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="game-mode-select" class="block text-lg font-bold mb-2">Game Mode</label>
+                        <select id="game-mode-select" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg">
+                            <option value="standard">Standard</option>
+                            <option value="jayjay">Jay Jay Mode</option>
+                            <option value="blur">Blur Mode</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="reroll-cooldown" class="block text-lg font-bold mb-2">Reroll Cooldown (seconds)</label>
+                        <input type="number" id="reroll-cooldown" value="0.1" min="0" step="0.1" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="store-modal" class="modal-overlay flex items-center justify-center">
+        <div class="modal-content purchase-panel rounded-2xl w-full max-w-xs p-4 space-y-4">
+        </div>
+    </div>
+
+    <div id="out-of-rerolls-modal" class="modal-overlay flex items-center justify-center">
+         <div class="modal-content main-panel rounded-2xl w-full max-w-md p-1">
+            <div class="bg-gray-900 rounded-xl p-6 text-center">
+                <h2 class="text-2xl font-bold mb-4">Out of Rerolls!</h2>
+                <p class="mb-6">You have no more traits left! Buy more from the store?</p>
+                <div class="flex justify-center gap-4">
+                    <button id="store-yes-btn" class="btn-base btn-reroll font-bold py-2 px-8 rounded-lg">Yes</button>
+                    <button id="store-no-btn" class="btn-base bg-red-600 font-bold py-2 px-8 rounded-lg">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-reroll-modal" class="modal-overlay flex items-center justify-center">
+         <div class="modal-content main-panel rounded-2xl w-full max-w-md p-1">
+            <div class="bg-gray-900 rounded-xl p-6 text-center">
+                <h2 class="text-2xl font-bold mb-4">Confirm Reroll</h2>
+                <p id="confirm-reroll-text" class="mb-6">This trait is marked as unskippable. Are you sure you want to reroll it?</p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirm-yes-btn" class="btn-base btn-reroll font-bold py-2 px-8 rounded-lg">Yes</button>
+                    <button id="confirm-no-btn" class="btn-base bg-red-600 font-bold py-2 px-8 rounded-lg">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            const baseTraits = [
+                { name: 'Swift I', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 15.6, description: '<span class="text-green-400">-5%</span> SPA', category: 'Swift' },
+                { name: 'Swift II', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 7.8, description: '<span class="text-green-400">-7.5%</span> SPA', category: 'Swift' },
+                { name: 'Swift III', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 2.6, description: '<span class="text-green-400">-12.5%</span> SPA', category: 'Swift' },
+                { name: 'Range I', image: 'assets/icons/Range1.webp', rarity: 'Common', weight: 15.6, description: '<span class="text-green-400">+5%</span> RNG', category: 'Range' },
+                { name: 'Range II', image: 'assets/icons/Range1.webp', rarity: 'Common', weight: 7.8, description: '<span class="text-green-400">+10%</span> RNG', category: 'Range' },
+                { name: 'Range III', image: 'assets/icons/Range1.webp', rarity: 'Common', weight: 2.6, description: '<span class="text-green-400">+15%</span> RNG', category: 'Range' },
+                { name: 'Vigor I', image: 'assets/icons/Vigor.webp', rarity: 'Common', weight: 15.6, description: '<span class="text-green-400">+5%</span> DMG', category: 'Vigor' },
+                { name: 'Vigor II', image: 'assets/icons/Vigor.webp', rarity: 'Common', weight: 7.8, description: '<span class="text-green-400">+10%</span> DMG', category: 'Vigor' },
+                { name: 'Vigor III', image: 'assets/icons/Vigor.webp', rarity: 'Common', weight: 2.6, description: '<span class="text-green-400">+15%</span> DMG', category: 'Vigor' },
+                { name: 'Scholar', image: 'assets/icons/Scholar.png', rarity: 'Uncommon', weight: 10, description: '<span class="text-green-400">+50%</span> EXP' },
+                { name: 'Marksman', image: 'assets/icons/Marksman.webp', rarity: 'Uncommon', weight: 6.5, description: '<span class="text-green-400">+30%</span> RNG' },
+                { name: 'Fortune', image: 'assets/icons/Fortune.webp', rarity: 'Uncommon', weight: 2.5, description: '<span class="text-green-400">+20%</span> Income,<span class="text-green-400"> -10%</span> cost <br>(on non-farm units)' },
+                { name: 'Blitz', image: 'assets/icons/Blitz.webp', rarity: 'Uncommon', weight: 1.85, description: '<span class="text-green-400">-20%</span> SPA' },
+                { name: 'Solar', image: 'assets/icons/Solar.webp', rarity: 'Rare', weight: 0.5, description: '<span class="text-green-400">+20%</span> RNG, <span class="text-green-400">+10%</span> DMG, <span class="text-green-400">-10%</span> SPA', pity: 300, colorClass: 'trait-rainbow' },
+                { name: 'Deadeye', image: 'assets/icons/Deadeye.webp', rarity: 'Rare', weight: 0.375, description: '<span class="text-green-400">+15%</span> CRIT, <span class="text-green-400">+25%</span> CRIT DMG', pity: 400, colorClass: 'trait-rainbow' },
+                { name: 'Ethereal', image: 'assets/icons/Ethereal.webp', rarity: 'Rare', weight: 0.175, description: '<span class="text-green-400">+20%</span> DMG, <span class="text-green-400">-15%</span> SPA, <span class="text-green-400">+10%</span> RNG', pity: 858, colorClass: 'trait-rainbow' },
+                { name: 'Monarch', image: 'assets/icons/Monarch.webp', rarity: 'Mythic', weight: 0.1, description: '<span class="text-green-400">+300%</span> DMG, <span class="text-green-400">-10%</span> SPA, <span class="text-green-400">+5%</span> RNG, <br>1 Place Limit', pity: 1500, colorClass: 'trait-rainbow' }
+            ];
+            
+            const displayTraits = [
+                { name: 'Swift', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 26, description: 'I: -5% SPA, II: -7.5% SPA, III: -12.5% SPA' },
+                { name: 'Range', image: 'assets/icons/Range1.webp', rarity: 'Common', weight: 26, description: 'I: +5% RNG, II: +10% RNG, III: +15% RNG' },
+                { name: 'Vigor', image: 'assets/icons/Vigor.webp', rarity: 'Common', weight: 26, description: 'I: +5% DMG, II: +10% DMG, III: +15% DMG' },
+                ...baseTraits.filter(t => !t.category)
+            ];
+
+            // --- STATE ---
+            let rerollCount = 0;
+            let limitedRerolls = 0;
+            let currentTrait = null;
+            let filterSettings = {};
+            let isPityEnabled = true; 
+            let isLimitedMode = false;
+            let currentMode = 'standard';
+            let rerollCooldown = 0.1; 
+            let isRerollOnCooldown = false; 
+            let pityCounters = { Solar: 0, Deadeye: 0, Ethereal: 0, Monarch: 0 };
+            const pityConfig = { Solar: 300, Deadeye: 400, Ethereal: 858, Monarch: 1500 };
+
+            // --- DOM ELEMENTS ---
+            const rerollBtn = document.getElementById('reroll-btn');
+            const totalRerollsCount = document.getElementById('total-rerolls-count');
+            const totalRerollsText = document.getElementById('total-rerolls-text');
+            const remainingRerollsCount = document.getElementById('remaining-rerolls-count');
+            const remainingRerollsText = document.getElementById('remaining-rerolls-text');
+            const traitSlot = document.getElementById('trait-slot');
+            const traitImg = document.getElementById('trait-img');
+            const traitName = document.getElementById('trait-name');
+            const traitDesc = document.getElementById('trait-desc');
+            
+            const indexBtn = document.getElementById('index-btn');
+            const traitIndexPanel = document.getElementById('trait-index-panel');
+            const traitIndexList = document.getElementById('trait-index-list');
+
+            const filtersBtn = document.getElementById('filters-btn');
+            const filtersModal = document.getElementById('filters-modal');
+            const filtersList = document.getElementById('filters-list');
+
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsModal = document.getElementById('settings-modal');
+            const pityToggle = document.getElementById('pity-toggle');
+            const limitedToggle = document.getElementById('limited-toggle');
+            const gameModeSelect = document.getElementById('game-mode-select');
+            const rerollCooldownInput = document.getElementById('reroll-cooldown'); 
+            
+            const confirmRerollModal = document.getElementById('confirm-reroll-modal');
+            const confirmYesBtn = document.getElementById('confirm-yes-btn');
+            const confirmNoBtn = document.getElementById('confirm-no-btn');
+            
+            const outOfRerollsModal = document.getElementById('out-of-rerolls-modal');
+            const storeYesBtn = document.getElementById('store-yes-btn');
+            const storeNoBtn = document.getElementById('store-no-btn');
+            const storeModal = document.getElementById('store-modal');
+
+            const purchasePanel = document.getElementById('purchase-panel');
+            const storeModalContent = storeModal.querySelector('.modal-content');
+
+            // --- SFX ---
+            function playUiSfx() {
+                const sfx = new Audio('assets/sfx/ui_sfx.m4a');
+                sfx.play().catch(error => console.error("SFX play failed:", error));
+            }
+
+            // --- FUNCTIONS ---
+            
+            function initializeDefaultFilters() {
+                displayTraits.forEach(trait => {
+                    filterSettings[trait.name] = {
+                        unskippable: trait.rarity === 'Mythic' || trait.rarity === 'Rare'
+                    };
+                });
+            }
+
+            const getRarityClass = (rarity) => {
+                const rarityMap = { 'Common': 'text-gray-400', 'Uncommon': 'text-amber-400', 'Rare': 'text-violet-500', 'Mythic': 'text-pink-500' };
+                return rarityMap[rarity] || 'text-gray-400';
+            }
+
+            function updateTraitSlot(trait) {
+                currentTrait = trait;
+                traitImg.src = trait.image;
+                traitName.textContent = trait.name;
+                traitDesc.innerHTML = trait.description;
+
+                const colorClasses = ['trait-vigor', 'trait-swift', 'trait-range', 'trait-rainbow', 'text-gray-400', 'text-amber-400', 'text-violet-500', 'text-pink-500'];
+                traitName.classList.remove(...colorClasses);
+
+                let colorClass = trait.colorClass;
+                if (!colorClass && trait.category) {
+                    switch(trait.category) {
+                        case 'Vigor': colorClass = 'trait-vigor'; break;
+                        case 'Swift': colorClass = 'trait-swift'; break;
+                        case 'Range': colorClass = 'trait-range'; break;
+                    }
+                }
+
+                if (colorClass) {
+                    traitName.classList.add(colorClass);
+                } else {
+                    traitName.classList.add(getRarityClass(trait.rarity));
+                }
+
+                traitName.className = `text-xl font-semibold text-center ${traitName.className}`;
+            }
+
+            function getTraitRates() {
+                let traits = JSON.parse(JSON.stringify(baseTraits));
+                if (currentMode === 'jayjay') {
+                    const monarch = traits.find(t => t.name === 'Monarch');
+                    if (monarch) monarch.weight = 0;
+                } else if (currentMode === 'blur') {
+                    const monarch = traits.find(t => t.name === 'Monarch');
+                    if (monarch) monarch.weight = (1/350) * 100; // ~0.2857
+                }
+                return traits;
+            }
+
+            function getRandomTrait() {
+                const traits = getTraitRates();
+                const totalWeight = traits.reduce((sum, trait) => sum + trait.weight, 0);
+                let random = Math.random() * totalWeight;
+                for (const trait of traits) {
+                    if (random < trait.weight) return baseTraits.find(bt => bt.name === trait.name);
+                    random -= trait.weight;
+                }
+            }
+
+            function executeSingleReroll() {
+                if (isRerollOnCooldown) return;
+
+                if (isLimitedMode) {
+                    if (limitedRerolls <= 0) {
+                        outOfRerollsModal.classList.add('active');
+                        return;
+                    }
+                    limitedRerolls--;
+                } 
+                rerollCount++;
+                updateRerollCounter();
+                
+                let obtainedTrait;
+                let pityHit = false;
+
+                if (isPityEnabled) {
+                    if (pityCounters.Monarch >= pityConfig.Monarch) {
+                        obtainedTrait = baseTraits.find(t => t.name === 'Monarch');
+                        pityHit = true;
+                    } else if (pityCounters.Ethereal >= pityConfig.Ethereal) {
+                        obtainedTrait = baseTraits.find(t => t.name === 'Ethereal');
+                        pityHit = true;
+                    } else if (pityCounters.Deadeye >= pityConfig.Deadeye) {
+                        obtainedTrait = baseTraits.find(t => t.name === 'Deadeye');
+                        pityHit = true;
+                    } else if (pityCounters.Solar >= pityConfig.Solar) {
+                        obtainedTrait = baseTraits.find(t => t.name === 'Solar');
+                        pityHit = true;
+                    }
+                }
+
+                if (!pityHit) {
+                    obtainedTrait = getRandomTrait();
+                }
+                
+                updateTraitSlot(obtainedTrait);
+
+                if(isPityEnabled) {
+                    Object.keys(pityCounters).forEach(key => pityCounters[key]++);
+                    if (obtainedTrait.rarity === 'Mythic') {
+                        Object.keys(pityCounters).forEach(key => pityCounters[key] = 0);
+                    } else if (obtainedTrait.rarity === 'Rare') {
+                        pityCounters.Solar = 0;
+                        pityCounters.Deadeye = 0;
+                        pityCounters.Ethereal = 0;
+                    }
+                }
+                
+                if (traitIndexPanel.classList.contains('active')) {
+                    populateIndex();
+                }
+
+                isRerollOnCooldown = true;
+                rerollBtn.disabled = true;
+                setTimeout(() => {
+                    isRerollOnCooldown = false;
+                    if (!isLimitedMode || limitedRerolls > 0) {
+                        rerollBtn.disabled = false;
+                    }
+                }, rerollCooldown * 1000);
+            }
+            
+            function handleRerollClick() {
+                if (isRerollOnCooldown) return;
+
+                if (isLimitedMode && limitedRerolls <= 0) {
+                    outOfRerollsModal.classList.add('active');
+                    return;
+                }
+
+                const isUnskippable = currentTrait.category ? 
+                    filterSettings[currentTrait.category]?.unskippable : 
+                    filterSettings[currentTrait.name]?.unskippable;
+
+                if (currentTrait && isUnskippable) {
+                    confirmRerollModal.classList.add('active');
+                } else {
+                    executeSingleReroll();
+                }
+            }
+
+            function populateIndex() {
+                traitIndexList.innerHTML = '';
+                displayTraits.forEach(trait => {
+                    const item = document.createElement('div');
+                    item.className = 'trait-index-item p-3 flex items-center gap-4';
+                    let pityText = '';
+                    if (isPityEnabled && trait.pity) {
+                        pityText = `<span class="text-xs text-white">(Pity: ${pityCounters[trait.name]}/${trait.pity})</span>`;
+                    }
+                    item.innerHTML = `
+                        <img src="${trait.image}" alt="${trait.name}" class="w-12 h-12 rounded-md">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-baseline">
+                                <h4 class="font-bold text-lg ${getRarityClass(trait.rarity)}">${trait.name}</h4>
+                                <span class="text-sm">${trait.weight}%</span>
+                            </div>
+                            <div class="flex justify-between items-baseline">
+                               <p class="text-xs text-gray-400">${trait.description}</p>
+                               ${pityText}
+                            </div>
+                        </div>
+                    `;
+                    traitIndexList.appendChild(item);
+                });
+            }
+
+            function populateFilters() {
+                filtersList.innerHTML = '';
+                displayTraits.forEach(trait => {
+                    const { unskippable } = filterSettings[trait.name];
+                    const button = document.createElement('button');
+                    button.className = `filter-btn rounded-lg p-2 ${unskippable ? 'active' : ''}`;
+                    button.dataset.trait = trait.name;
+                    button.innerHTML = `<img src="${trait.image}" alt="${trait.name}" class="w-full h-full object-contain">`;
+                    filtersList.appendChild(button);
+                });
+            }
+            
+            function updateRerollCounter() {
+                if (isLimitedMode) {
+                    remainingRerollsText.classList.remove('hidden');
+                    totalRerollsText.classList.remove('hidden');
+                    remainingRerollsCount.textContent = limitedRerolls;
+                    totalRerollsCount.textContent = rerollCount;
+                    rerollBtn.disabled = limitedRerolls <= 0;
+                } else {
+                    remainingRerollsText.classList.add('hidden');
+                    totalRerollsText.classList.remove('hidden');
+                    totalRerollsCount.textContent = rerollCount;
+                    rerollBtn.disabled = false;
+                }
+            }
+            
+            function getPurchasePanelHTML() {
+                return `
+                    <div class="purchase-item rounded-xl p-4">
+                        <h3 class="font-bold text-xl">10 Trait Rerolls</h3>
+                        <p class="text-sm text-gray-400 mb-3">Used to roll powerful traits on your units!</p>
+                        <button class="purchase-btn btn-base w-full rounded-lg font-bold py-2 flex items-center justify-center gap-2" data-amount="10">
+                            <img src="assets/icons/bobux-icon.png" class="robux-icon" alt="R"> 999
+                        </button>
+                    </div>
+                    <div class="purchase-item rounded-xl p-4">
+                        <h3 class="font-bold text-xl">50 Trait Rerolls</h3>
+                        <p class="text-sm text-gray-400 mb-3">Gives you 50 trait rerolls!</p>
+                        <button class="purchase-btn btn-base w-full rounded-lg font-bold py-2 flex items-center justify-center gap-2" data-amount="50">
+                           <img src="assets/icons/bobux-icon.png" class="robux-icon" alt="R"> 4,499
+                        </button>
+                    </div>
+                    <div class="purchase-item rounded-xl p-4">
+                        <h3 class="font-bold text-xl">100 Trait Rerolls</h3>
+                        <p class="text-sm text-gray-400 mb-3">Gives you 100 trait rerolls!</p>
+                        <button class="purchase-btn btn-base w-full rounded-lg font-bold py-2 flex items-center justify-center gap-2" data-amount="100">
+                            <img src="assets/icons/bobux-icon.png" class="robux-icon" alt="R"> 7,999
+                        </button>
+                    </div>
+                    <div class="purchase-item rounded-xl p-4">
+                        <h3 class="font-bold text-xl">500 Trait Rerolls</h3>
+                        <p class="text-sm text-gray-400 mb-3">Gives you 500 trait rerolls!</p>
+                        <button class="purchase-btn btn-base w-full rounded-lg font-bold py-2 flex items-center justify-center gap-2 text-lg" data-amount="500">
+                            <img src="assets/icons/bobux-icon.png" class="robux-icon" alt="R"> 30,000
+                        </button>
+                    </div>
+                `;
+            }
+
+            // --- EVENT LISTENERS ---
+            rerollBtn.addEventListener('click', () => {
+                playUiSfx();
+                handleRerollClick();
+            });
+            
+            indexBtn.addEventListener('click', () => {
+                playUiSfx();
+                populateIndex();
+                traitIndexPanel.classList.toggle('active');
+            });
+
+            filtersBtn.addEventListener('click', () => {
+                playUiSfx();
+                populateFilters();
+                filtersModal.classList.toggle('active');
+            });
+
+            settingsBtn.addEventListener('click', () => {
+                playUiSfx();
+                settingsModal.classList.toggle('active');
+            });
+
+            pityToggle.addEventListener('change', (e) => {
+                playUiSfx();
+                isPityEnabled = e.target.checked;
+                Object.keys(pityCounters).forEach(key => pityCounters[key] = 0);
+            });
+            
+            limitedToggle.addEventListener('change', (e) => {
+                playUiSfx();
+                isLimitedMode = e.target.checked;
+                purchasePanel.classList.toggle('hidden', !isLimitedMode);
+                rerollCount = 0;
+                limitedRerolls = 0;
+                updateRerollCounter();
+            });
+
+            gameModeSelect.addEventListener('change', (e) => {
+                playUiSfx();
+                currentMode = e.target.value;
+                Object.keys(pityCounters).forEach(key => pityCounters[key] = 0);
+            });
+
+            rerollCooldownInput.addEventListener('change', (e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value) && value >= 0) {
+                    rerollCooldown = value;
+                }
+            });
+
+            filtersList.addEventListener('click', (e) => {
+                const button = e.target.closest('.filter-btn');
+                if (button) {
+                    playUiSfx();
+                    const traitName = button.dataset.trait;
+                    const currentState = filterSettings[traitName].unskippable;
+                    filterSettings[traitName].unskippable = !currentState;
+                    button.classList.toggle('active', !currentState);
+                }
+            });
+
+            confirmYesBtn.addEventListener('click', () => {
+                playUiSfx();
+                confirmRerollModal.classList.remove('active');
+                executeSingleReroll();
+            });
+            
+            confirmNoBtn.addEventListener('click', () => {
+                playUiSfx();
+                confirmRerollModal.classList.remove('active');
+            });
+
+            storeYesBtn.addEventListener('click', () => {
+                playUiSfx();
+                outOfRerollsModal.classList.remove('active');
+                storeModal.classList.add('active');
+            });
+            
+            storeNoBtn.addEventListener('click', () => {
+                playUiSfx();
+                outOfRerollsModal.classList.remove('active');
+            });
+
+            document.body.addEventListener('click', (e) => {
+                const button = e.target.closest('.purchase-btn');
+                if (button) {
+                    playUiSfx();
+                    const amount = parseInt(button.dataset.amount, 10);
+                    limitedRerolls += amount;
+                    updateRerollCounter();
+                    if(storeModal.classList.contains('active')) {
+                        storeModal.classList.remove('active');
+                    }
+                }
+            });
+        
+            [filtersModal, settingsModal, storeModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+            traitIndexPanel.addEventListener('click', (e) => {
+                 if (e.target === traitIndexPanel) {
+                    traitIndexPanel.classList.remove('active');
+                }
+            });
+
+            const actionButtons = [indexBtn, rerollBtn, filtersBtn];
+            actionButtons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    if (button === rerollBtn) {
+                        indexBtn.classList.add('push-left');
+                        filtersBtn.classList.add('push-right');
+                    } else if (button === indexBtn) {
+                        rerollBtn.classList.add('push-right');
+                        filtersBtn.classList.add('push-right');
+                    } else if (button === filtersBtn) {
+                        rerollBtn.classList.add('push-left');
+                        indexBtn.classList.add('push-left');
+                    }
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    actionButtons.forEach(btn => {
+                        btn.classList.remove('push-left', 'push-right');
+                    });
+                });
+            });
+
+
+            // --- INITIALIZATION ---
+            initializeDefaultFilters();
+            const purchaseHTML = getPurchasePanelHTML();
+            purchasePanel.innerHTML = purchaseHTML;
+            storeModalContent.innerHTML = purchaseHTML;
+            updateTraitSlot(getRandomTrait());
+            updateRerollCounter();
+        });
+    </script>
+</body>
+</html>
