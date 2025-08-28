@@ -259,6 +259,26 @@
             border: none;
         }
 
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .pop-animation {
+            animation: pop 0.2s ease-in-out;
+        }
+
+        @keyframes glow-flash {
+            0% { box-shadow: 0 0 0px 0px var(--glow-color); }
+            50% { box-shadow: 0 0 10px 2px var(--glow-color); }
+            100% { box-shadow: 0 0 0px 0px var(--glow-color); }
+        }
+
+        .glow-flash-animation {
+            animation: glow-flash 0.15s ease-in-out;
+        }
+
     </style>
 </head>
 <body class="text-white">
@@ -275,26 +295,32 @@
                             <h1 class="text-3xl font-extrabold tracking-wider">TRAITS</h1>
                         </div>
                         <div class="border border-gray-700 rounded-lg p-4">
-                            <div class="flex flex-col md:flex-row items-center justify-center gap-16 mb-6">
+                            <div class="flex flex-col md:flex-row items-center justify-center gap-8 mb-6">
                                 <div class="flex-shrink-0 text-center">
-                                    <div class="inline-block relative">
-                                        <img src="assets/units/Koguro_29.webp" alt="Koguro (Unleashed)" class="w-36 h-36 rounded-md mx-auto">
-                                        <h2 class="absolute bottom-1 left-0 right-0 text-lg font-bold bg-black/50 py-0.5">Koguro (Unleashed)</h2>
-                                    </div>
+                                    <img src="assets/units/Koguro_29.webp" alt="Koguro (Unleashed)" class="w-36 h-36 rounded-md mx-auto">
+                                    <h2 class="text-lg font-bold mt-2">Koguro (Unleashed)</h2>
                                 </div>
-                                <div class="w-full md:w-auto text-center">
-                                    <p class="mb-2 font-bold">TRAIT</p>
-                                    <div class="p-0.5 rounded-lg mb-2 max-w-sm mx-auto" style="background: linear-gradient(to right, #f97316, #fed7aa, #f97316);">
-                                        <div class="bg-black p-2 rounded-md w-64 mx-auto">
-                                            <div id="trait-slot" class="flex items-center justify-center gap-2">
-                                                <img id="trait-img" src="https://placehold.co/64x64/1F2937/FFFFFF?text=?" alt="Trait" class="w-12 h-12 object-contain rounded-md">
-                                                <div class="w-40 h-12 flex items-center justify-center">
-                                                    <h3 id="trait-name" class="text-xl font-semibold text-center">Empty</h3>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-full md:w-auto text-center">
+                                        <p class="mb-2 font-bold">TRAIT</p>
+                                        <div id="trait-box-wrapper" class="p-0.5 rounded-lg mb-2 max-w-sm mx-auto" style="background: linear-gradient(to right, #f97316, #fed7aa, #f97316);">
+                                            <div id="trait-box" class="bg-black p-2 rounded-md w-64 mx-auto">
+                                                <div id="trait-slot" class="flex items-center justify-center gap-2">
+                                                    <img id="trait-img" src="https://placehold.co/64x64/1F2937/FFFFFF?text=?" alt="Trait" class="w-12 h-12 object-contain rounded-md">
+                                                    <div class="w-40 h-12 flex items-center justify-center">
+                                                        <h3 id="trait-name" class="text-2xl font-semibold text-center">Empty</h3>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        <p id="trait-desc" class="text-center text-lg"></p>
                                     </div>
-                                    <p id="trait-desc" class="text-center text-lg"></p>
+                                    <div class="text-center">
+                                        <div class="relative p-1 bg-purple-500/50 rounded-md">
+                                            <img src="assets/icons/Trait_Reroll.webp" alt="Trait Reroll" class="w-20 h-20">
+                                            <p id="reroll-item-count" class="absolute bottom-2 right-2 font-bold text-2xl">&infin;/1</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -310,7 +336,6 @@
                 </div>
             </div>
             <div id="counter-container" class="text-center text-xl">
-                <p id="remaining-rerolls-text" class="hidden">Remaining Rerolls: <span id="remaining-rerolls-count" class="font-bold text-2xl">0</span></p>
                 <p id="total-rerolls-text" style="color:white;">Total Rerolls: <span id="total-rerolls-count" class="font-bold text-2xl">0</span></p>
             </div>
         </div>
@@ -425,7 +450,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA ---
             const baseTraits = [
                 { name: 'Swift I', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 15.6, description: '<span class="text-green-400">-5%</span> SPA', category: 'Swift' },
                 { name: 'Swift II', image: 'assets/icons/Swift.webp', rarity: 'Common', weight: 7.8, description: '<span class="text-green-400">-7.5%</span> SPA', category: 'Swift' },
@@ -453,7 +477,6 @@
                 ...baseTraits.filter(t => !t.category)
             ];
 
-            // --- STATE ---
             let rerollCount = 0;
             let limitedRerolls = 0;
             let currentTrait = null;
@@ -466,7 +489,6 @@
             let pityCounters = { Solar: 0, Deadeye: 0, Ethereal: 0, Monarch: 0 };
             const pityConfig = { Solar: 300, Deadeye: 400, Ethereal: 858, Monarch: 1500 };
 
-            // --- DOM ELEMENTS ---
             const rerollBtn = document.getElementById('reroll-btn');
             const totalRerollsCount = document.getElementById('total-rerolls-count');
             const totalRerollsText = document.getElementById('total-rerolls-text');
@@ -476,6 +498,8 @@
             const traitImg = document.getElementById('trait-img');
             const traitName = document.getElementById('trait-name');
             const traitDesc = document.getElementById('trait-desc');
+            const traitBox = document.getElementById('trait-box');
+            const rerollItemCount = document.getElementById('reroll-item-count');
             
             const indexBtn = document.getElementById('index-btn');
             const traitIndexPanel = document.getElementById('trait-index-panel');
@@ -508,7 +532,6 @@
             const purchasePanel = document.getElementById('purchase-panel');
             const storeModalContent = storeModal.querySelector('.modal-content');
 
-            // --- SFX ---
             const uiSfx = new Audio('assets/sfx/ui_sfx.m4a');
             
             function playUiSfx() {
@@ -516,8 +539,6 @@
                 uiSfx.play().catch(error => console.error("SFX play failed:", error));
             }
 
-            // --- FUNCTIONS ---
-            
             function initializeDefaultFilters() {
                 displayTraits.forEach(trait => {
                     filterSettings[trait.name] = {
@@ -541,11 +562,30 @@
                 traitName.classList.remove(...colorClasses);
 
                 let colorClass = trait.colorClass;
+                let glowColor = '#9ca3af';
+
                 if (!colorClass && trait.category) {
                     switch(trait.category) {
-                        case 'Vigor': colorClass = 'trait-vigor'; break;
-                        case 'Swift': colorClass = 'trait-swift'; break;
-                        case 'Range': colorClass = 'trait-range'; break;
+                        case 'Vigor': 
+                            colorClass = 'trait-vigor'; 
+                            glowColor = '#c084fc';
+                            break;
+                        case 'Swift': 
+                            colorClass = 'trait-swift'; 
+                            glowColor = '#60a5fa';
+                            break;
+                        case 'Range': 
+                            colorClass = 'trait-range'; 
+                            glowColor = '#f87171';
+                            break;
+                    }
+                } else if (trait.colorClass === 'trait-rainbow') {
+                     glowColor = '#f59e0b';
+                } else {
+                    switch(trait.rarity) {
+                        case 'Uncommon': glowColor = '#f59e0b'; break;
+                        case 'Rare': glowColor = '#8b5cf6'; break;
+                        case 'Mythic': glowColor = '#ec4899'; break;
                     }
                 }
 
@@ -555,7 +595,18 @@
                     traitName.classList.add(getRarityClass(trait.rarity));
                 }
 
-                traitName.className = `text-xl font-semibold text-center ${traitName.className}`;
+                traitName.className = `text-2xl font-semibold text-center ${traitName.className}`;
+                
+                traitName.classList.add('pop-animation');
+                traitName.addEventListener('animationend', () => {
+                    traitName.classList.remove('pop-animation');
+                }, { once: true });
+
+                traitBox.style.setProperty('--glow-color', glowColor);
+                traitBox.classList.add('glow-flash-animation');
+                traitBox.addEventListener('animationend', () => {
+                    traitBox.classList.remove('glow-flash-animation');
+                }, { once: true });
             }
 
             function getTraitRates() {
@@ -565,7 +616,7 @@
                     if (monarch) monarch.weight = 0;
                 } else if (currentMode === 'blur') {
                     const monarch = traits.find(t => t.name === 'Monarch');
-                    if (monarch) monarch.weight = (1/350) * 100; // ~0.2857
+                    if (monarch) monarch.weight = (1/350) * 100;
                 }
                 return traits;
             }
@@ -705,11 +756,13 @@
                     remainingRerollsCount.textContent = limitedRerolls;
                     totalRerollsCount.textContent = rerollCount;
                     rerollBtn.disabled = limitedRerolls <= 0;
+                    rerollItemCount.textContent = `${limitedRerolls}/1`;
                 } else {
                     remainingRerollsText.classList.add('hidden');
                     totalRerollsText.classList.remove('hidden');
                     totalRerollsCount.textContent = rerollCount;
                     rerollBtn.disabled = false;
+                    rerollItemCount.innerHTML = `&infin;/1`;
                 }
             }
             
@@ -763,7 +816,6 @@
                 });
             }
 
-            // --- EVENT LISTENERS ---
             rerollBtn.addEventListener('click', () => {
                 playUiSfx();
                 handleRerollClick();
@@ -814,7 +866,6 @@
                 }
             });
 
-            // Volume Controls
             volumeSlider.addEventListener('input', () => {
                 const volume = volumeSlider.value;
                 uiSfx.volume = volume;
@@ -946,8 +997,6 @@
                 });
             });
 
-
-            // --- INITIALIZATION ---
             initializeDefaultFilters();
             const purchaseHTML = getPurchasePanelHTML();
             purchasePanel.innerHTML = purchaseHTML;
