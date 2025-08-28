@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Vanguards - Trait Reroll Simulator</title>
+    <title>AV Reroll Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +18,15 @@
 
         h1, h2, h3, h4, p, button, span, select, option, label {
             text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000;
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
         }
 
         .gradient-text {
@@ -180,7 +189,6 @@
             transform: scale(1);
         }
         
-
         .filter-btn {
             background-color: rgba(0,0,0,0.3);
             border: 2px solid #4b5563;
@@ -223,6 +231,32 @@
             width: 1.25em;
             height: 1.25em;
             filter: drop-shadow(-2px -2px 0 #000) drop-shadow(2px -2px 0 #000) drop-shadow(-2px 2px 0 #000) drop-shadow(2px 2px 0 #000);
+        }
+        
+        .volume-block {
+            width: calc(10% - 4px);
+            height: 1rem;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            transition: background-color 0.1s ease-in-out;
+        }
+        .volume-block.active {
+            background-color: #10B981;
+        }
+        #volume-slider::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+        #volume-slider::-moz-range-track {
+            background: transparent;
+        }
+        #volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        #volume-slider::-moz-range-thumb {
+            width: 0;
+            height: 0;
+            border: none;
         }
 
     </style>
@@ -276,8 +310,8 @@
                 </div>
             </div>
             <div id="counter-container" class="text-center text-xl">
-                <p id="remaining-rerolls-text" class="hidden">Remaining Rerolls: <span id="remaining-rerolls-count" class="font-bold text-2xl gradient-text">0</span></p>
-                <p id="total-rerolls-text">Total Rerolls: <span id="total-rerolls-count" class="font-bold text-2xl gradient-text">0</span></p>
+                <p id="remaining-rerolls-text" class="hidden">Remaining Rerolls: <span id="remaining-rerolls-count" class="font-bold text-2xl">0</span></p>
+                <p id="total-rerolls-text" style="color:white;">Total Rerolls: <span id="total-rerolls-count" class="font-bold text-2xl">0</span></p>
             </div>
         </div>
     </div>
@@ -334,12 +368,23 @@
                         <select id="game-mode-select" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg">
                             <option value="standard">Standard</option>
                             <option value="jayjay">Jay Jay Mode</option>
-                            <option value="blur">Blur Mode</option>
+                            <option value="blur">blur Mode</option>
                         </select>
                     </div>
                     <div>
                         <label for="reroll-cooldown" class="block text-lg font-bold mb-2">Reroll Cooldown (seconds)</label>
                         <input type="number" id="reroll-cooldown" value="0.1" min="0" step="0.1" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-baseline mb-2">
+                            <label for="volume-slider" class="text-lg font-bold">Volume</label>
+                             <input type="number" id="volume-level-input" min="0" max="1" step="0.1" class="w-16 p-1 text-lg font-bold text-center bg-gray-700 border-gray-600 rounded-lg">
+                        </div>
+                        <div class="relative flex items-center h-4 cursor-pointer" id="volume-control-area">
+                            <div id="volume-blocks-container" class="flex justify-between items-center w-full absolute top-0 left-0 h-full gap-1">
+                                </div>
+                            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" class="absolute top-0 left-0 w-full h-full bg-transparent appearance-none pointer-events-none">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -396,8 +441,8 @@
                 { name: 'Fortune', image: 'assets/icons/Fortune.webp', rarity: 'Uncommon', weight: 2.5, description: '<span class="text-green-400">+20%</span> Income,<span class="text-green-400"> -10%</span> cost <br>(on non-farm units)' },
                 { name: 'Blitz', image: 'assets/icons/Blitz.webp', rarity: 'Uncommon', weight: 1.85, description: '<span class="text-green-400">-20%</span> SPA' },
                 { name: 'Solar', image: 'assets/icons/Solar.webp', rarity: 'Rare', weight: 0.5, description: '<span class="text-green-400">+20%</span> RNG, <span class="text-green-400">+10%</span> DMG, <span class="text-green-400">-10%</span> SPA', pity: 300, colorClass: 'trait-rainbow' },
-                { name: 'Deadeye', image: 'assets/icons/Deadeye.webp', rarity: 'Rare', weight: 0.375, description: '<span class="text-green-400">+15%</span> CRIT, <span class="text-green-400">+25%</span> CRIT DMG', pity: 400, colorClass: 'trait-rainbow' },
-                { name: 'Ethereal', image: 'assets/icons/Ethereal.webp', rarity: 'Rare', weight: 0.175, description: '<span class="text-green-400">+20%</span> DMG, <span class="text-green-400">-15%</span> SPA, <span class="text-green-400">+10%</span> RNG', pity: 858, colorClass: 'trait-rainbow' },
+                { name: 'Deadeye', image: 'assets/icons/Deadeye.webp', rarity: 'Rare', weight: 0.375, description: '<span class="text-green-400">+45%</span> CRIT, <span class="text-green-400">+50%</span> CRIT DMG', pity: 400, colorClass: 'trait-rainbow' },
+                { name: 'Ethereal', image: 'assets/icons/Ethereal.webp', rarity: 'Rare', weight: 0.175, description: '<span class="text-green-400">+20%</span> DMG, <span class="text-green-400">-20%</span> SPA, <span class="text-green-400">+20%</span> RNG', pity: 858, colorClass: 'trait-rainbow' },
                 { name: 'Monarch', image: 'assets/icons/Monarch.webp', rarity: 'Mythic', weight: 0.1, description: '<span class="text-green-400">+300%</span> DMG, <span class="text-green-400">-10%</span> SPA, <span class="text-green-400">+5%</span> RNG, <br>1 Place Limit', pity: 1500, colorClass: 'trait-rainbow' }
             ];
             
@@ -446,6 +491,10 @@
             const limitedToggle = document.getElementById('limited-toggle');
             const gameModeSelect = document.getElementById('game-mode-select');
             const rerollCooldownInput = document.getElementById('reroll-cooldown'); 
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeControlArea = document.getElementById('volume-control-area');
+            const volumeBlocksContainer = document.getElementById('volume-blocks-container');
+            const volumeLevelInput = document.getElementById('volume-level-input');
             
             const confirmRerollModal = document.getElementById('confirm-reroll-modal');
             const confirmYesBtn = document.getElementById('confirm-yes-btn');
@@ -460,9 +509,11 @@
             const storeModalContent = storeModal.querySelector('.modal-content');
 
             // --- SFX ---
+            const uiSfx = new Audio('assets/sfx/ui_sfx.m4a');
+            
             function playUiSfx() {
-                const sfx = new Audio('assets/sfx/ui_sfx.m4a');
-                sfx.play().catch(error => console.error("SFX play failed:", error));
+                uiSfx.currentTime = 0;
+                uiSfx.play().catch(error => console.error("SFX play failed:", error));
             }
 
             // --- FUNCTIONS ---
@@ -586,9 +637,7 @@
                 rerollBtn.disabled = true;
                 setTimeout(() => {
                     isRerollOnCooldown = false;
-                    if (!isLimitedMode || limitedRerolls > 0) {
-                        rerollBtn.disabled = false;
-                    }
+                    rerollBtn.disabled = false;
                 }, rerollCooldown * 1000);
             }
             
@@ -696,6 +745,23 @@
                     </div>
                 `;
             }
+            
+            function setupVolumeBlocks() {
+                volumeBlocksContainer.innerHTML = '';
+                for (let i = 0; i < 10; i++) {
+                    const block = document.createElement('div');
+                    block.className = 'volume-block';
+                    volumeBlocksContainer.appendChild(block);
+                }
+            }
+            
+            function updateVolumeBlocks(volume) {
+                const blocks = volumeBlocksContainer.querySelectorAll('.volume-block');
+                const activeBlocksCount = Math.round(parseFloat(volume) * 10);
+                blocks.forEach((block, index) => {
+                    block.classList.toggle('active', index < activeBlocksCount);
+                });
+            }
 
             // --- EVENT LISTENERS ---
             rerollBtn.addEventListener('click', () => {
@@ -747,6 +813,57 @@
                     rerollCooldown = value;
                 }
             });
+
+            // Volume Controls
+            volumeSlider.addEventListener('input', () => {
+                const volume = volumeSlider.value;
+                uiSfx.volume = volume;
+                updateVolumeBlocks(volume);
+            });
+
+            volumeSlider.addEventListener('change', () => {
+                 const volume = volumeSlider.value;
+                 volumeLevelInput.value = parseFloat(volume).toFixed(1);
+            });
+
+            volumeControlArea.addEventListener('click', (e) => {
+                const rect = volumeControlArea.getBoundingClientRect();
+                const offsetX = e.clientX - rect.left;
+                const width = rect.width;
+                let volume = offsetX / width;
+                volume = Math.max(0, Math.min(1, volume));
+                const snappedVolume = Math.round(volume * 10) / 10;
+                
+                volumeSlider.value = snappedVolume;
+                volumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                volumeSlider.dispatchEvent(new Event('change', { bubbles: true }));
+                playUiSfx();
+            });
+
+            volumeLevelInput.addEventListener('input', (e) => {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) {
+                    value = 0;
+                }
+                value = Math.max(0, Math.min(1, value));
+                volumeSlider.value = value;
+                volumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+
+            volumeLevelInput.addEventListener('change', (e) => {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) {
+                    value = 0;
+                }
+                value = Math.max(0, Math.min(1, value));
+                const snappedValue = Math.round(value * 10) / 10;
+
+                e.target.value = snappedValue.toFixed(1);
+                volumeSlider.value = snappedValue;
+                volumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                playUiSfx();
+            });
+
 
             filtersList.addEventListener('click', (e) => {
                 const button = e.target.closest('.filter-btn');
@@ -835,6 +952,13 @@
             const purchaseHTML = getPurchasePanelHTML();
             purchasePanel.innerHTML = purchaseHTML;
             storeModalContent.innerHTML = purchaseHTML;
+            
+            setupVolumeBlocks();
+            const initialVolume = volumeSlider.value;
+            uiSfx.volume = initialVolume;
+            updateVolumeBlocks(initialVolume);
+            volumeLevelInput.value = parseFloat(initialVolume).toFixed(1);
+            
             updateTraitSlot(getRandomTrait());
             updateRerollCounter();
         });
